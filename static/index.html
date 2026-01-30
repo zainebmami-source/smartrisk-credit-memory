@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>SmartRisk - Recherche Intelligente</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background: #f0f2f5; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { color: #1a73e8; text-align: center; }
+        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 12px; border: 2px solid #dfe1e5; border-radius: 8px; font-size: 16px; }
+        button { padding: 12px 24px; background: #1a73e8; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #1557b0; }
+        .result-card { background: #fff; border: 1px solid #e8eaed; border-left: 6px solid #1a73e8; padding: 20px; margin-top: 15px; border-radius: 8px; transition: transform 0.2s; }
+        .result-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .score { color: #188038; font-weight: bold; float: right; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 SmartRisk Credit Search</h1>
+        <div class="search-box">
+            <input type="text" id="queryInput" placeholder="Ex: Revenu élevé pour projet immobilier...">
+            <button onclick="search()">Rechercher</button>
+        </div>
+        <div id="statusMessage" style="text-align: center; color: #666;"></div>
+        <div id="resultsList"></div>
+    </div>
+
+    <script>
+        async function search() {
+            const query = document.getElementById('queryInput').value;
+            const list = document.getElementById('resultsList');
+            const status = document.getElementById('statusMessage');
+
+            if (!query) return alert("Tapez quelque chose !");
+
+            status.innerText = "Recherche en cours...";
+            list.innerHTML = "";
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/search?query=${encodeURIComponent(query)}`);
+                
+                if (!response.ok) throw new Error("Erreur serveur API");
+                
+                const data = await response.json();
+                console.log("Données reçues:", data); // Pour déboguer dans la console F12
+
+                status.innerText = `${data.results.points.length} dossiers trouvés :`;
+
+                data.results.points.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'result-card';
+                    div.innerHTML = `
+                        <span class="score">Confiance: ${(p.score * 100).toFixed(1)}%</span>
+                        <strong>📁 Dossier ID: ${p.id}</strong><br>
+                        <p>💰 Revenu: ${p.payload.person_income.toLocaleString()} € | 🏠 Logement: ${p.payload.person_home_ownership}</p>
+                        <small>Prêt demandé: ${p.payload.loan_amnt} € pour ${p.payload.loan_intent}</small>
+                    `;
+                    list.appendChild(div);
+                });
+
+            } catch (error) {
+                console.error(error);
+                status.innerText = "❌ Erreur : Impossible de contacter l'API. Vérifiez que le terminal est allumé.";
+                alert("Erreur de connexion ! Regardez la console (F12).");
+            }
+        }
+    </script>
+</body>
+</html>
